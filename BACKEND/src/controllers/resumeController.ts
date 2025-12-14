@@ -1,66 +1,162 @@
-import ResumeModel from "../models/resume.js";
-import FolderModel from "../models/folder.js"
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
+import ResumeModel from "../models/resume.js";
+import FolderModel from "../models/folder.js";
+import { deleteFromCloudinary } from "../utils/upload.js";
 import { processPendingResumes } from "./automationController.js";
+import { isValidObjectId } from "../middlewares/authMiddleware.js";
 
 
-export const uploadResume = async (
-    req: Request,
-    res: Response,
-) => {
-    const { id } = req.params;
-    const file = req.file;
 
+/* --------------------------------------------------
+   UPLOAD RESUME
+-------------------------------------------------- */
+export const uploadResume = async (req: Request, res: Response) => {
     try {
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        const { id: folderId } = req.params;
+        const file = req.file;
+        const userId = req.user?.id;
+
+        if (!userId || !isValidObjectId(userId)) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized",
+            });
+        }
+
+        if (!folderId || !isValidObjectId(folderId)) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid folder id"
+                message: "Invalid folder id",
             });
         }
 
         if (!file) {
             return res.status(400).json({
                 success: false,
-                message: "No resume file uploaded"
+                message: "No resume file uploaded",
             });
         }
 
-        const folder = await FolderModel.findById(id);
+        // Ownership enforced at query level
+        const folder = await FolderModel.findOne({
+            _id: folderId,
+            user: userId,
+        });
+
         if (!folder) {
             return res.status(404).json({
                 success: false,
-                message: `No Folder Exist of id ${id}`
+                message: "Folder not found or access denied",
             });
         }
 
         const resume = await ResumeModel.create({
-            folderId: new mongoose.Types.ObjectId(id),
+            folderId: folder._id,
             localPath: file.path,
             originalName: file.originalname,
+            status: "PENDING",
         });
 
         folder.totalFiles.push(resume._id);
         await folder.save();
+
         res.status(201).json({
             success: true,
+            message: "Resume uploaded",
             data: resume,
-            message: "Resume Uploaded",
-            folder
         });
 
+        // Fire-and-forget automation trigger
         const pending = await ResumeModel.findOne({ status: "PENDING" });
         if (pending) {
-            await processPendingResumes()
+            processPendingResumes().catch(err =>
+                console.error("AUTOMATION_TRIGGER_FAILED:", err)
+            );
         }
     } catch (error) {
+        console.error("UPLOAD_RESUME_ERROR:", error);
         return res.status(500).json({
             success: false,
-            message: "Internal Server Error",
-            error: error
-        })
+            message: "Internal server error",
+        });
     }
 };
 
+/* --------------------------------------------------
+   DELETE RESUME
+-------------------------------------------------- */
+export const deleteResume = async (req: Request, res: Response) => {
+    try {
+        const { id: resumeId } = req.params;
+        const userId = req.user?.id;
 
+        if (!userId || !isValidObjectId(userId)) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized",
+            });
+        }
+
+        if (!resumeId || !isValidObjectId(resumeId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid resume id",
+            });
+        }
+
+        const resume = await ResumeModel.findById(resumeId);
+        if (!resume) {
+            return res.status(404).json({
+                success: false,
+                message: "Resume not found",
+            });
+        }
+
+        // Ensure resume belongs to user's folder
+        const folder = await FolderModel.findOne({
+            _id: resume.folderId,
+            user: userId,
+        });
+
+        if (!folder) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not allowed to delete this resume",
+            });
+        }
+
+        const publicId = resume.cloudinary?.publicId;
+        if (publicId) {
+            try {
+                await deleteFromCloudinary(publicId);
+            } catch (err) {
+                console.error(
+                    `CLOUDINARY_DELETE_FAILED [resume=${resume._id}]`,
+                    err
+                );
+            }
+        }
+
+        await ResumeModel.findByIdAndDelete(resume._id);
+
+        folder.totalFiles = folder.totalFiles.filter(
+            id => id.toString() !== resume._id.toString()
+        );
+        folder.processedFiles = folder.processedFiles.filter(
+            id => id.toString() !== resume._id.toString()
+        );
+        await folder.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Resume deleted successfully",
+        });
+    } catch (error) {
+        console.error("DELETE_RESUME_ERROR:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to delete resume",
+        });
+    }
+};

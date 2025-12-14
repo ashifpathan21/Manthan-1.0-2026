@@ -1,6 +1,7 @@
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import type { Request, Response, NextFunction } from "express";
 import UserModel from "../models/user.js";
+import mongoose from "mongoose";
 import { config } from "dotenv"
 config()
 
@@ -15,6 +16,12 @@ export const sealUser = (user: {
     user.password = "";
     return user;
 }
+
+/* --------------------------------------------------
+   Helpers
+-------------------------------------------------- */
+export const isValidObjectId = (id?: string) =>
+    !!id && mongoose.Types.ObjectId.isValid(id);
 
 export const authMiddleware = async (
     req: Request,

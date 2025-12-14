@@ -1,110 +1,142 @@
-import type { Request, Response } from "express"
-import FolderModel from "../models/folder.js"
-import ResumeModal from "../models/resume.js"
-import mongoose from "mongoose";
+import type { Request, Response } from "express";
+import FolderModel from "../models/folder.js";
+import ResumeModal from "../models/resume.js";
 import { deleteFromCloudinary } from "../utils/upload.js";
+import { isValidObjectId } from "../middlewares/authMiddleware.js";
 
 
 
+/* --------------------------------------------------
+   CREATE FOLDER
+-------------------------------------------------- */
 export const createFolder = async (req: Request, res: Response) => {
     try {
         const { title } = req.body;
-        const id = req.user?.id;
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({
+        const userId = req.user?.id;
+
+        if (!userId || !isValidObjectId(userId)) {
+            return res.status(401).json({
                 success: false,
-                message: "Invalid user id"
+                message: "Unauthorized",
             });
         }
-        if (!title.trim()) {
+
+        if (typeof title !== "string" || !title.trim()) {
             return res.status(400).json({
                 success: false,
-                message: "Please Provide a Title"
-            })
+                message: "Title is required",
+            });
         }
 
         const folder = await FolderModel.create({
-            title: title,
-            user: new mongoose.Types.ObjectId(id)
-        })
+            title: title.trim(),
+            user: userId,
+        });
 
         return res.status(201).json({
             success: true,
-            message: "Folder Created",
-            data: folder
-        })
+            message: "Folder created",
+            data: folder,
+        });
     } catch (error) {
+        console.error("CREATE_FOLDER_ERROR:", error);
         return res.status(500).json({
             success: false,
-            message: "Internal Server Error",
-            error: error
-        })
+            message: "Internal server error",
+        });
     }
-}
+};
 
+/* --------------------------------------------------
+   UPDATE FOLDER
+-------------------------------------------------- */
 export const updateFolder = async (req: Request, res: Response) => {
     try {
-        const { title } = req.body;
         const { id } = req.params;
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({
+        const { title } = req.body;
+        const userId = req.user?.id;
+
+        if (!userId || !isValidObjectId(userId)) {
+            return res.status(401).json({
                 success: false,
-                message: "Invalid folder id"
+                message: "Unauthorized",
             });
         }
-        if (!title.trim()) {
-            return res.status(400).json({
-                success: false,
-                message: "Please Provide a Title"
-            })
-        }
 
-        const folder = await FolderModel.findOne({ _id: id });
-        if (!folder) {
-            return res.status(404).json({
-                success: false,
-                message: "Folder Not Found"
-            })
-        }
-
-        folder.title = title;
-        await folder.save();
-
-        return res.status(201).json({
-            success: true,
-            message: "Folder Updated",
-            data: folder
-        })
-    } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: "Internal Server Error",
-            error: error
-        })
-    }
-}
-
-
-export const deleteFolder = async (req: Request, res: Response) => {
-    const session = await mongoose.startSession();
-
-    try {
-        const { id } = req.params;
-
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        if (!id || !isValidObjectId(id)) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid folder id",
             });
         }
 
+        if (typeof title !== "string" || !title.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: "Title is required",
+            });
+        }
 
+        const folder = await FolderModel.findOne({
+            _id: id,
+            user: userId,
+        });
 
-        const folder = await FolderModel.findById(id);
         if (!folder) {
             return res.status(404).json({
                 success: false,
-                message: "Folder not found",
+                message: "Folder not found or access denied",
+            });
+        }
+
+        folder.title = title.trim();
+        await folder.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Folder updated",
+            data: folder,
+        });
+    } catch (error) {
+        console.error("UPDATE_FOLDER_ERROR:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
+
+/* --------------------------------------------------
+   DELETE FOLDER
+-------------------------------------------------- */
+export const deleteFolder = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user?.id;
+
+        if (!userId || !isValidObjectId(userId)) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized",
+            });
+        }
+
+        if (!id || !isValidObjectId(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid folder id",
+            });
+        }
+
+        const folder = await FolderModel.findOne({
+            _id: id,
+            user: userId,
+        });
+
+        if (!folder) {
+            return res.status(404).json({
+                success: false,
+                message: "Folder not found or access denied",
             });
         }
 
@@ -112,66 +144,62 @@ export const deleteFolder = async (req: Request, res: Response) => {
 
         for (const resume of resumes) {
             const publicId = resume.cloudinary?.publicId;
-
-            // Only attempt delete if publicId exists
             if (!publicId) continue;
 
             try {
                 await deleteFromCloudinary(publicId);
             } catch (err) {
-                // Log and continue — NEVER throw here
                 console.error(
-                    `Failed to delete Cloudinary file for resume ${resume._id}:`,
+                    `CLOUDINARY_DELETE_FAILED [resume=${resume._id}]`,
                     err
                 );
             }
         }
 
-        // After cleanup attempts, remove DB records
         await ResumeModal.deleteMany({ folderId: folder._id });
-
-
         await FolderModel.findByIdAndDelete(folder._id);
-
 
         return res.status(200).json({
             success: true,
             message: "Folder deleted successfully",
         });
-
     } catch (error) {
-
+        console.error("DELETE_FOLDER_ERROR:", error);
         return res.status(500).json({
             success: false,
             message: "Failed to delete folder",
-            error: error
         });
     }
 };
 
+/* --------------------------------------------------
+   GET USER FOLDERS
+-------------------------------------------------- */
 export const getFolder = async (req: Request, res: Response) => {
     try {
-        const id = req.user?.id;
-        if (!id) {
-            return res.status(400).json({
+        const userId = req.user?.id;
+
+        if (!userId || !isValidObjectId(userId)) {
+            return res.status(401).json({
                 success: false,
-                message: "Please Provide the token"
-            })
+                message: "Unauthorized",
+            });
         }
 
-        const folders = await FolderModel.find({ user: id }).populate("totalFiles processedFiles").exec();
+        const folders = await FolderModel.find({ user: userId })
+            .populate("totalFiles processedFiles")
+            .exec();
 
         return res.status(200).json({
             success: true,
-            message: "Folder Fetched Successfully",
-            data: folders
-        })
-
+            message: "Folders fetched successfully",
+            data: folders,
+        });
     } catch (error) {
+        console.error("GET_FOLDER_ERROR:", error);
         return res.status(500).json({
             success: false,
-            message: "Internal Server Error",
-            error: error
-        })
+            message: "Internal server error",
+        });
     }
-}
+};
