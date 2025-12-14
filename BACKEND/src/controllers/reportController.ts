@@ -91,7 +91,7 @@ export const createReport = async (req: Request, res: Response) => {
 /* --------------------------------------------------
    GET DONE REPORTS BY JOB ID
 -------------------------------------------------- */
-export const getDoneReportsByJob = async (req: Request, res: Response) => {
+export const getReportsByJob = async (req: Request, res: Response) => {
     try {
         const { jobId } = req.params;
         const userId = req.user?.id;
@@ -122,12 +122,10 @@ export const getDoneReportsByJob = async (req: Request, res: Response) => {
 
         const reports = await ReportModel.find({
             jobProfile: jobId,
-            status: "DONE"
-        })
-            .populate("folder")
-            .populate("user")
+        }).populate("folder")
             .populate("results")
             .sort({ createdAt: -1 });
+
 
         return res.status(200).json({
             success: true,
@@ -135,10 +133,86 @@ export const getDoneReportsByJob = async (req: Request, res: Response) => {
         });
 
     } catch (error) {
-        console.error("GET_DONE_REPORTS_ERROR:", error);
+        console.error("GET_REPORTS_ERROR:", error);
         return res.status(500).json({
             success: false,
             message: "Failed to fetch reports"
+        });
+    }
+};
+
+
+/* --------------------------------------------------
+   DELETE REPORT
+-------------------------------------------------- */
+export const deleteReport = async (req: Request, res: Response) => {
+    try {
+        const { id: reportId } = req.params;
+        const userId = req.user?.id;
+
+        if (!userId || !isValidObjectId(userId)) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized"
+            });
+        }
+
+        if (!reportId || !isValidObjectId(reportId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid report id"
+            });
+        }
+
+        const report = await ReportModel.findById(reportId);
+        if (!report) {
+            return res.status(404).json({
+                success: false,
+                message: "Report not found"
+            });
+        }
+
+        // 🔐 Authorization check
+        const job = await JobModel.findById(report.jobProfile);
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: "Associated job not found"
+            });
+        }
+
+        const isJobOwner =
+            job.createdBy.toString() === userId.toString();
+
+        const isReportOwner =
+            report.user.toString() === userId.toString();
+
+        if (!isJobOwner && !isReportOwner) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not allowed to delete this report"
+            });
+        }
+
+        // 🧹 Remove report reference from Job
+        job.reports = job.reports.filter(
+            rId => rId.toString() !== report._id.toString()
+        );
+        await job.save();
+
+        // ❌ Delete report
+        await ReportModel.findByIdAndDelete(report._id);
+
+        return res.status(200).json({
+            success: true,
+            message: "Report deleted successfully"
+        });
+
+    } catch (error) {
+        console.error("DELETE_REPORT_ERROR:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to delete report"
         });
     }
 };

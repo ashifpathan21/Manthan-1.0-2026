@@ -24,16 +24,17 @@ export async function uploadToCloudinary(
         const result = await cloudinary.uploader.upload(filePath, {
             folder: "resumes",
             resource_type: "raw",
+            type: "upload",
+            access_mode: "public",
             public_id: fileName,
             overwrite: true,
-            format: "pdf",
             use_filename: true,
             unique_filename: false
         });
 
         return {
             success: true,
-            url: result.secure_url,
+            url: result.secure_url, // THIS URL WILL WORK
             publicId: result.public_id
         };
     } catch (err: any) {
@@ -44,10 +45,9 @@ export async function uploadToCloudinary(
     }
 }
 
-
-
 export async function deleteFromCloudinary(publicId: string) {
     await cloudinary.uploader.destroy(publicId, {
-        resource_type: "raw"
+        resource_type: "raw",
+        type: "upload"
     });
 }

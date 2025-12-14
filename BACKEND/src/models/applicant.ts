@@ -6,6 +6,7 @@ const applicantSchema = new mongoose.Schema({
         ref: "Resume",
         required: true
     },
+    score: { type: Number, required: true },
     jobProfile: {
         type: mongoose.Types.ObjectId,
         ref: "Job",
