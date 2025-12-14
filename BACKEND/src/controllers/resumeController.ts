@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import mongoose from "mongoose";
 import ResumeModel from "../models/resume.js";
 import FolderModel from "../models/folder.js";
 import { deleteFromCloudinary } from "../utils/upload.js";
