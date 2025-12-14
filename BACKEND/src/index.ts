@@ -4,13 +4,11 @@ import FolderRoutes from "./routes/folderRoutes.js"
 import AuthRoutes from "./routes/authRoutes.js"
 import { config } from "dotenv"
 import { connectDB } from "./utils/db.js";
+import { processPendingResumes } from "./controllers/automationController.js"
 
 config();
 connectDB();
-
-
-
-
+processPendingResumes()
 
 const app = express();
 

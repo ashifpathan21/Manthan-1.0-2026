@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const ResumeSchema = new mongoose.Schema({
     folderId: { type: mongoose.Types.ObjectId, ref: "Folder" },
     originalName: String,
-    localPath: String,
+    localPath: { type: String, required: true },
     status: {
         type: String,
         enum: ["PENDING", "PROCESSING", "DONE", "FAILED"],
@@ -18,7 +18,9 @@ const ResumeSchema = new mongoose.Schema({
     },
     extracted: {
         text: String,
-        links: Object,
+        links: [{
+            type: String
+        }],
         metadata: Object
     },
     createdAt: {

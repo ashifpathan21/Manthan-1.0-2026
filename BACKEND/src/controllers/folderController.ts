@@ -2,6 +2,7 @@ import type { Request, Response } from "express"
 import FolderModel from "../models/folder.js"
 import ResumeModal from "../models/resume.js"
 import mongoose from "mongoose";
+import { deleteFromCloudinary } from "../utils/upload.js";
 
 
 
@@ -107,9 +108,27 @@ export const deleteFolder = async (req: Request, res: Response) => {
             });
         }
 
+        const resumes = await ResumeModal.find({ folderId: folder._id });
 
-        await ResumeModal.deleteMany(
-            { folderId: folder._id });
+        for (const resume of resumes) {
+            const publicId = resume.cloudinary?.publicId;
+
+            // Only attempt delete if publicId exists
+            if (!publicId) continue;
+
+            try {
+                await deleteFromCloudinary(publicId);
+            } catch (err) {
+                // Log and continue — NEVER throw here
+                console.error(
+                    `Failed to delete Cloudinary file for resume ${resume._id}:`,
+                    err
+                );
+            }
+        }
+
+        // After cleanup attempts, remove DB records
+        await ResumeModal.deleteMany({ folderId: folder._id });
 
 
         await FolderModel.findByIdAndDelete(folder._id);

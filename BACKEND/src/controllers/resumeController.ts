@@ -2,6 +2,7 @@ import ResumeModel from "../models/resume.js";
 import FolderModel from "../models/folder.js"
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
+import { processPendingResumes } from "./automationController.js";
 
 
 export const uploadResume = async (
@@ -49,6 +50,10 @@ export const uploadResume = async (
             folder
         });
 
+        const pending = await ResumeModel.findOne({ status: "PENDING" });
+        if (pending) {
+            await processPendingResumes()
+        }
     } catch (error) {
         return res.status(500).json({
             success: false,
@@ -57,3 +62,5 @@ export const uploadResume = async (
         })
     }
 };
+
+
