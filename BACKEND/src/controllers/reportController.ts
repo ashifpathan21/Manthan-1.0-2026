@@ -116,7 +116,8 @@ export const createReport = async (req: Request, res: Response) => {
         const existing = await ReportModel.findOne({
             jobProfile: jobId,
             folder: folderId,
-            user: userId
+            user: userId,
+            priority: priority
         });
 
         if (existing) {
