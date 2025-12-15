@@ -16,6 +16,13 @@ const reportSchema = new mongoose.Schema({
         required: true,
         ref: "Job"
     },
+    priority: {
+        skills: { type: Number, required: true },
+        experience: { type: Number, required: true },
+        location: { type: Number, required: true },
+        qualifications: { type: Number, required: true },
+        projects: { type: Number, required: true }
+    },
     status: {
         type: String,
         enum: ["PENDING", "DONE", "FAILED"],

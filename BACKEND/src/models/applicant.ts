@@ -6,15 +6,20 @@ const applicantSchema = new mongoose.Schema({
         ref: "Resume",
         required: true
     },
-    score: { type: Number, required: true },
+    verdict: { type: String },
+    score: { type: Number },
     jobProfile: {
         type: mongoose.Types.ObjectId,
         ref: "Job",
         required: true
     },
+    status: {
+        type: String,
+        enum: ["PENDING", "UNVERIFIED", "PROCESSING", "VERIFIED", "FAILED"],
+        default: "PENDING"
+    },
     name: {
         type: String,
-        required: true
     },
     location: {
         type: String
@@ -58,7 +63,21 @@ const applicantSchema = new mongoose.Schema({
         codolio: String,
         codeforces: String,
         codechef: String,
+        gfg: String,
         otherLinks: [{ type: String }]
+    },
+    failureReason: String,
+    authentication: [{ type: Object }],
+    createdFor:{
+       type: mongoose.Types.ObjectId,
+        ref:"Report",
+        required: true
+    },
+    createdAt: { type: Date, dafault: Date.now },
+    createdBy: {
+        type: mongoose.Types.ObjectId,
+        ref:"User",
+        required: true
     }
 })
 

@@ -11,5 +11,4 @@ router.post('/upload/:id', upload.single("file"), authMiddleware, uploadResume);
 router.delete("/:id", authMiddleware, deleteResume)
 
 
-
 export default router

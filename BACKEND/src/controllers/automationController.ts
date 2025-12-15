@@ -1,9 +1,11 @@
 // controllers/resumeAutomation.controller.ts
 import Resume from "../models/resume.js";
+import Applicant from "../models/applicant.js";
 import { promises as fs } from "fs";
 import { extractHyperlinks, extractTextAndMetadata } from "../utils/extract.js";
 import { uploadToCloudinary } from "../utils/upload.js";
 import FolderModel from "../models/folder.js"
+import { fetchAllSocialProfiles } from "../utils/social.js";
 
 
 const SLEEP = (ms: number) => new Promise(res => setTimeout(res, ms));
@@ -97,3 +99,4 @@ export async function processPendingResumes() {
         await SLEEP(300);
     }
 }
+

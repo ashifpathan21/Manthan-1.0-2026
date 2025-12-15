@@ -1,8 +1,63 @@
+
 import type { Request, Response } from "express";
 import ReportModel from "../models/report.js";
 import JobModel from "../models/job.js";
 import FolderModel from "../models/folder.js";
+import ApplicantModel from "../models/applicant.js";
 import { isValidObjectId } from "../middlewares/authMiddleware.js";
+
+/* --------------------------------------------------
+   HELPER 
+-------------------------------------------------- */
+type Priority = {
+    skills: number;
+    experience: number;
+    location: number;
+    qualifications: number;
+    projects: number;
+};
+
+export function validatePriority(priority: Partial<Priority>) {
+    const requiredFields: (keyof Priority)[] = [
+        'skills',
+        'experience',
+        'location',
+        'qualifications',
+        'projects'
+    ];
+
+    // 1️⃣ Check all fields exist and are valid numbers
+    for (const field of requiredFields) {
+        const value = priority[field];
+
+        if (value === undefined || value === null) {
+            throw new Error(`Priority field '${field}' is required`);
+        }
+
+        if (typeof value !== 'number' || Number.isNaN(value)) {
+            throw new Error(`Priority field '${field}' must be a valid number`);
+        }
+
+        if (value < 0) {
+            throw new Error(`Priority field '${field}' cannot be negative`);
+        }
+    }
+
+    // 2️⃣ Check total = 100
+    const total =
+        priority.skills! +
+        priority.experience! +
+        priority.location! +
+        priority.qualifications! +
+        priority.projects!;
+
+    if (total !== 100) {
+        throw new Error(`Priority total must be exactly 100. Received ${total}`);
+    }
+
+    return true; // explicitly valid
+}
+
 
 /* --------------------------------------------------
    CREATE / SEND REPORT
@@ -10,7 +65,7 @@ import { isValidObjectId } from "../middlewares/authMiddleware.js";
 export const createReport = async (req: Request, res: Response) => {
     try {
         const userId = req.user?.id;
-        const { jobId, folderId } = req.body;
+        const { jobId, folderId, priority } = req.body;
 
         if (!userId || !isValidObjectId(userId)) {
             return res.status(401).json({
@@ -26,6 +81,14 @@ export const createReport = async (req: Request, res: Response) => {
             return res.status(400).json({
                 success: false,
                 message: "Invalid job or folder id"
+            });
+        }
+        try {
+            validatePriority(req.body.priority);
+        } catch (err: any) {
+            return res.status(400).json({
+                success: false,
+                message: err.message
             });
         }
 
@@ -49,7 +112,7 @@ export const createReport = async (req: Request, res: Response) => {
             });
         }
 
-        // 🚫 Prevent duplicate reports
+        // Prevent duplicate reports
         const existing = await ReportModel.findOne({
             jobProfile: jobId,
             folder: folderId,
@@ -63,6 +126,7 @@ export const createReport = async (req: Request, res: Response) => {
             });
         }
 
+        // Create the report with status PENDING
         const report = await ReportModel.create({
             jobProfile: jobId,
             folder: folderId,
@@ -73,9 +137,24 @@ export const createReport = async (req: Request, res: Response) => {
         job.reports.push(report._id);
         await job.save();
 
+        // ✅ Create Applicant documents for each processed file
+        const applicants = folder.processedFiles.map(resumeId => ({
+            resume: resumeId,
+            jobProfile: jobId,
+            status: "PENDING",    // PENDING so automation can process later
+            createdFor: report._id,
+            createdBy: userId
+        }));
+
+        const createdApplicants = await ApplicantModel.insertMany(applicants);
+
+        // Optional: push applicants to report.results if needed
+        report.results = createdApplicants.map(a => a._id);
+        await report.save();
+
         res.status(201).json({
             success: true,
-            message: "Report submitted successfully",
+            message: "Report submitted successfully with applicants",
             data: report
         });
 
@@ -87,6 +166,7 @@ export const createReport = async (req: Request, res: Response) => {
         });
     }
 };
+
 
 /* --------------------------------------------------
    GET DONE REPORTS BY JOB ID
