@@ -1,4 +1,3 @@
-
 import type { Request, Response } from "express";
 import ReportModel from "../models/report.js";
 import JobModel from "../models/job.js";
@@ -7,7 +6,7 @@ import ApplicantModel from "../models/applicant.js";
 import { isValidObjectId } from "../middlewares/authMiddleware.js";
 
 /* --------------------------------------------------
-   HELPER 
+   TYPES
 -------------------------------------------------- */
 type Priority = {
     skills: number;
@@ -17,16 +16,32 @@ type Priority = {
     projects: number;
 };
 
+/* --------------------------------------------------
+   HELPERS
+-------------------------------------------------- */
+function normalizePriority(priority: Priority): Priority {
+    return {
+        skills: priority.skills,
+        experience: priority.experience,
+        location: priority.location,
+        qualifications: priority.qualifications,
+        projects: priority.projects
+    };
+}
+
+function getPriorityHash(priority: Priority): string {
+    return JSON.stringify(normalizePriority(priority));
+}
+
 export function validatePriority(priority: Partial<Priority>) {
     const requiredFields: (keyof Priority)[] = [
-        'skills',
-        'experience',
-        'location',
-        'qualifications',
-        'projects'
+        "skills",
+        "experience",
+        "location",
+        "qualifications",
+        "projects"
     ];
 
-    // 1️⃣ Check all fields exist and are valid numbers
     for (const field of requiredFields) {
         const value = priority[field];
 
@@ -34,7 +49,7 @@ export function validatePriority(priority: Partial<Priority>) {
             throw new Error(`Priority field '${field}' is required`);
         }
 
-        if (typeof value !== 'number' || Number.isNaN(value)) {
+        if (typeof value !== "number" || Number.isNaN(value)) {
             throw new Error(`Priority field '${field}' must be a valid number`);
         }
 
@@ -43,7 +58,6 @@ export function validatePriority(priority: Partial<Priority>) {
         }
     }
 
-    // 2️⃣ Check total = 100
     const total =
         priority.skills! +
         priority.experience! +
@@ -55,12 +69,11 @@ export function validatePriority(priority: Partial<Priority>) {
         throw new Error(`Priority total must be exactly 100. Received ${total}`);
     }
 
-    return true; // explicitly valid
+    return true;
 }
 
-
 /* --------------------------------------------------
-   CREATE / SEND REPORT
+   CREATE REPORT
 -------------------------------------------------- */
 export const createReport = async (req: Request, res: Response) => {
     try {
@@ -68,10 +81,7 @@ export const createReport = async (req: Request, res: Response) => {
         const { jobId, folderId, priority } = req.body;
 
         if (!userId || !isValidObjectId(userId)) {
-            return res.status(401).json({
-                success: false,
-                message: "Unauthorized"
-            });
+            return res.status(401).json({ success: false, message: "Unauthorized" });
         }
 
         if (!jobId || !folderId ||
@@ -83,21 +93,15 @@ export const createReport = async (req: Request, res: Response) => {
                 message: "Invalid job or folder id"
             });
         }
-        try {
-            validatePriority(req.body.priority);
-        } catch (err: any) {
-            return res.status(400).json({
-                success: false,
-                message: err.message
-            });
-        }
+
+        validatePriority(priority);
+
+        const normalizedPriority = normalizePriority(priority);
+        const priorityHash = getPriorityHash(normalizedPriority);
 
         const job = await JobModel.findById(jobId);
         if (!job) {
-            return res.status(404).json({
-                success: false,
-                message: "Job not found"
-            });
+            return res.status(404).json({ success: false, message: "Job not found" });
         }
 
         const folder = await FolderModel.findOne({
@@ -112,65 +116,65 @@ export const createReport = async (req: Request, res: Response) => {
             });
         }
 
-        // Prevent duplicate reports
+        // ✅ Correct duplicate check
         const existing = await ReportModel.findOne({
             jobProfile: jobId,
             folder: folderId,
             user: userId,
-            priority: priority
+            priorityHash
         });
 
         if (existing) {
             return res.status(409).json({
                 success: false,
-                message: "Report already exists for this job and folder"
+                message: "Report already exists with same priority"
             });
         }
 
-        // Create the report with status PENDING
+        // ✅ Create report
         const report = await ReportModel.create({
             jobProfile: jobId,
             folder: folderId,
             user: userId,
+            priority: normalizedPriority,
+            priorityHash,
             status: "PENDING"
         });
 
         job.reports.push(report._id);
         await job.save();
 
-        // ✅ Create Applicant documents for each processed file
+        // ✅ Create applicants
         const applicants = folder.processedFiles.map(resumeId => ({
             resume: resumeId,
             jobProfile: jobId,
-            status: "PENDING",    // PENDING so automation can process later
+            status: "PENDING",
             createdFor: report._id,
             createdBy: userId
         }));
 
         const createdApplicants = await ApplicantModel.insertMany(applicants);
 
-        // Optional: push applicants to report.results if needed
         report.results = createdApplicants.map(a => a._id);
         await report.save();
 
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
-            message: "Report submitted successfully with applicants",
+            message: "Report submitted successfully",
             data: report
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("CREATE_REPORT_ERROR:", error);
         return res.status(500).json({
             success: false,
-            message: "Failed to create report"
+            message: error.message || "Failed to create report"
         });
     }
 };
 
-
 /* --------------------------------------------------
-   GET DONE REPORTS BY JOB ID
+   GET REPORTS BY JOB
 -------------------------------------------------- */
 export const getReportsByJob = async (req: Request, res: Response) => {
     try {
@@ -188,7 +192,6 @@ export const getReportsByJob = async (req: Request, res: Response) => {
             });
         }
 
-        // 🔒 Only job owner can see reports
         const job = await JobModel.findOne({
             _id: jobId,
             createdBy: userId
@@ -202,11 +205,11 @@ export const getReportsByJob = async (req: Request, res: Response) => {
         }
 
         const reports = await ReportModel.find({
-            jobProfile: jobId,
-        }).populate("folder")
+            jobProfile: jobId
+        })
+            .populate("folder")
             .populate("results")
             .sort({ createdAt: -1 });
-
 
         return res.status(200).json({
             success: true,
@@ -221,7 +224,6 @@ export const getReportsByJob = async (req: Request, res: Response) => {
         });
     }
 };
-
 
 /* --------------------------------------------------
    DELETE REPORT
@@ -253,7 +255,6 @@ export const deleteReport = async (req: Request, res: Response) => {
             });
         }
 
-        // 🔐 Authorization check
         const job = await JobModel.findById(report.jobProfile);
         if (!job) {
             return res.status(404).json({
@@ -262,11 +263,8 @@ export const deleteReport = async (req: Request, res: Response) => {
             });
         }
 
-        const isJobOwner =
-            job.createdBy.toString() === userId.toString();
-
-        const isReportOwner =
-            report.user.toString() === userId.toString();
+        const isJobOwner = job.createdBy.toString() === userId.toString();
+        const isReportOwner = report.user.toString() === userId.toString();
 
         if (!isJobOwner && !isReportOwner) {
             return res.status(403).json({
@@ -275,13 +273,11 @@ export const deleteReport = async (req: Request, res: Response) => {
             });
         }
 
-        // 🧹 Remove report reference from Job
         job.reports = job.reports.filter(
             rId => rId.toString() !== report._id.toString()
         );
         await job.save();
 
-        // ❌ Delete report
         await ReportModel.findByIdAndDelete(report._id);
 
         return res.status(200).json({

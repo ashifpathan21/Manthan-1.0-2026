@@ -13,7 +13,7 @@ import { processPendingResumes } from "./controllers/automationController.js"
 
 
 
-connectDB();
+await connectDB();
 processPendingResumes()
 
 const app = express();

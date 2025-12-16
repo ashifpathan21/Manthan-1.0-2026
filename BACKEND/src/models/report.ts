@@ -23,6 +23,11 @@ const reportSchema = new mongoose.Schema({
         qualifications: { type: Number, required: true },
         projects: { type: Number, required: true }
     },
+    priorityHash: {
+        type: String,
+        required: true,
+        index: true
+    },
     status: {
         type: String,
         enum: ["PENDING", "DONE", "FAILED"],
