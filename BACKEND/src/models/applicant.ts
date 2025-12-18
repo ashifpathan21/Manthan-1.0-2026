@@ -1,23 +1,8 @@
 import mongoose from "mongoose";
 
 const applicantSchema = new mongoose.Schema({
-    resume: {
-        type: mongoose.Types.ObjectId,
-        ref: "Resume",
-        required: true
-    },
     verdict: { type: String },
     score: { type: Number },
-    jobProfile: {
-        type: mongoose.Types.ObjectId,
-        ref: "Job",
-        required: true
-    },
-    status: {
-        type: String,
-        enum: ["PENDING", "UNVERIFIED", "PROCESSING", "VERIFIED", "FAILED"],
-        default: "PENDING"
-    },
     name: {
         type: String,
     },
@@ -65,6 +50,21 @@ const applicantSchema = new mongoose.Schema({
         codechef: String,
         gfg: String,
         otherLinks: [{ type: String }]
+    },
+    resume: {
+        type: mongoose.Types.ObjectId,
+        ref: "Resume",
+        required: true
+    },
+    jobProfile: {
+        type: mongoose.Types.ObjectId,
+        ref: "Job",
+        required: true
+    },
+    status: {
+        type: String,
+        enum: ["PENDING", "UNVERIFIED", "PROCESSING", "VERIFIED", "FAILED"],
+        default: "PENDING"
     },
     failureReason: String,
     authentication: [{ type: Object }],

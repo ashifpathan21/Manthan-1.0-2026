@@ -30,7 +30,7 @@ const reportSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ["PENDING", "DONE", "FAILED"],
+        enum: ["PENDING", "DONE", "FAILED" , "PROCESSING"],
         default: "PENDING"
     },
     results: [{
