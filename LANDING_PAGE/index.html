@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartHire.io | Intelligent Recruitment OS</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <nav class="navbar" id="main-nav">
+        <div class="nav-container">
+            <div class="logo">SmartHire<span class="highlight">.io</span></div>
+            <div class="nav-links">
+                <a href="#workflow">Workflow</a>
+                <a href="#analysis">Deep Analysis</a>
+                <a href="#demo">Live Demo</a>
+            </div>
+            <div class="nav-actions">
+                <a href="#" class="btn-secondary small">Log in</a>
+                <a href="#" class="btn-primary small">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-bg">
+            <div class="glow-blob"></div>
+            <div class="grid-overlay"></div>
+        </div>
+        <div class="hero-content">
+            <div class="pill-badge">
+                <span class="pulse-dot"></span> 
+                <span>System Operational: v1.0</span>
+            </div>
+            <h1>Hire with <br><span class="gradient-text">Algorithmic Certainty.</span></h1>
+            <p class="subheadline">
+                The only parser that verifies skills via GitHub history and scans project links for security threats before you even open the resume.
+            </p>
+            <div class="cta-group">
+                <a href="#demo" class="btn-primary big">See Live Extraction</a>
+                <a href="#analysis" class="btn-secondary big">How it Works</a>
+            </div>
+        </div>
+        <div class="scroll-indicator">Scroll to Analyze ↓</div>
+    </header>
+
+    <section class="scene" id="workflow">
+        <div class="scene-content">
+            <div class="step-badge">Phase 01</div>
+            <h2 class="scene-title">Intelligent Ingestion</h2>
+            <p class="scene-desc">Upload raw PDFs. Our <strong>Folder Controller</strong> segregates drives while Server 2 handles heavy OCR processing asynchronously.</p>
+            
+            <div class="visual-stage ingest-stage">
+                <div class="server-box">
+                    <span class="server-label">API Gateway</span>
+                    <div class="status-light"></div>
+                    <div class="server-activity">POST /upload</div>
+                </div>
+                <div class="connection-line">
+                    <div class="packet"></div>
+                    <div class="packet p2"></div>
+                </div>
+                <div class="server-box secondary">
+                    <span class="server-label">Worker Node</span>
+                    <div class="status-light blink"></div>
+                    <div class="server-activity">OCR Processing...</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="scene" id="analysis">
+        <div class="scene-content">
+            <div class="step-badge">Phase 02</div>
+            <h2 class="scene-title">Deep Verification Layer</h2>
+            <p class="scene-desc">We don't just read text. We crawl GitHub for code evidence and scan project URLs against Google's Safe Browsing API.</p>
+            
+            <div class="security-grid">
+                <div class="analysis-card">
+                    <div class="ac-header">
+                        <span class="icon">🐙</span> GitHub Deep Scan
+                    </div>
+                    <div class="ac-body">
+                        <div class="check-item">
+                            <span class="label">Repos Analyzed</span>
+                            <span class="val">42</span>
+                        </div>
+                        <div class="check-item">
+                            <span class="label">Tech Detected</span>
+                            <div class="tech-tags">
+                                <span class="tt">React</span>
+                                <span class="tt">TypeScript</span>
+                                <span class="tt">Docker</span>
+                            </div>
+                        </div>
+                        <div class="check-item highlight">
+                            <span class="label">Evidence</span>
+                            <span class="val success">Verified in 15 Repos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analysis-card">
+                    <div class="ac-header">
+                        <span class="icon">🛡️</span> Project Threat Scan
+                    </div>
+                    <div class="ac-body">
+                        <div class="check-item">
+                            <span class="label">Target URL</span>
+                            <span class="val mono">yashtambat.web...</span>
+                        </div>
+                        <div class="check-item">
+                            <span class="label">Google Safe Browsing</span>
+                            <span class="val safe">✅ Clean</span>
+                        </div>
+                        <div class="check-item">
+                            <span class="label">SEO Score</span>
+                            <div class="seo-bar">
+                                <div class="seo-fill" style="width: 85%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="scene" id="demo">
+        <div class="scene-content">
+            <div class="step-badge">Phase 03</div>
+            <h2 class="scene-title">The Decision Profile</h2>
+            <p class="scene-desc">All data coalesces into a verified candidate profile. <br><strong>Yash Tambat</strong> has been auto-selected based on your criteria.</p>
+            
+            <div class="profile-card">
+                <div class="card-top">
+                    <div class="profile-main">
+                        <div class="avatar">YT</div>
+                        <div class="meta">
+                            <h3>Yash Tambat <span class="verified-badge">✓ Verified</span></h3>
+                            <span class="role">Software Developer</span>
+                            <span class="location">Ahmedabad, India</span>
+                        </div>
+                    </div>
+                    <div class="score-dial">
+                        <svg viewBox="0 0 36 36" class="circular-chart">
+                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path class="circle" stroke-dasharray="86, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        </svg>
+                        <div class="percentage">86</div>
+                    </div>
+                </div>
+
+                <div class="card-mid">
+                    <div class="section-label">Verified Skills (GitHub Scanned)</div>
+                    <div class="skill-cloud">
+                        <div class="skill-chip verified" data-tooltip="Found in 12 Repos">
+                            <span class="check">✓</span> React JS
+                        </div>
+                        <div class="skill-chip verified" data-tooltip="Found in 5 Repos">
+                            <span class="check">✓</span> Node JS
+                        </div>
+                        <div class="skill-chip verified" data-tooltip="Found in 3 Repos">
+                            <span class="check">✓</span> AIML
+                        </div>
+                        <div class="skill-chip">Python</div>
+                        <div class="skill-chip">MongoDB</div>
+                    </div>
+                </div>
+
+                <div class="card-mid">
+                    <div class="section-label">Project Portfolio</div>
+                    <div class="project-row">
+                        <div class="project-icon">📂</div>
+                        <div class="project-info">
+                            <span class="p-name">Skin Disease Detection</span>
+                            <span class="p-tech">CNN, Python, SVM</span>
+                        </div>
+                        <div class="project-status safe">
+                            Shield Active 🛡️
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-bottom">
+                    <div class="ai-verdict">
+                        <strong>AI Verdict:</strong> Selected. High overlap with Job Profile (86%). Strong MERN & AI/ML aptitude confirmed via code analysis.
+                    </div>
+                    <div class="action-grid">
+                        <button class="btn-approve">Approve Interview</button>
+                        <button class="btn-reject">Archive</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features-section">
+        <div class="features-header">
+            <h2>Architecture Highlights</h2>
+            <p>Powered by TypeScript, Node.js, and Python Workers.</p>
+        </div>
+
+        <div class="bento-grid">
+            <div class="feature-card">
+                <div class="icon">🔍</div>
+                <h3>SEO & Threat Scanner</h3>
+                <p><code>threat.ts</code> middleware ensures no malicious project links enter your workflow.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🐙</div>
+                <h3>GitHub Heuristics</h3>
+                <p>We analyze `package.json` and file extensions to verify if they <em>actually</em> know React.</p>
+            </div>
+            <div class="feature-card span-2">
+                <div class="icon">☁️</div>
+                <h3>Async Processing</h3>
+                <p><strong>Server 2</strong> runs automation workers (OCR, extraction) independently, keeping the dashboard lag-free.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <p>© 2025 SmartHire.io | Security Level: Maximum</p>
+            <div class="footer-links">
+                <a href="#">Privacy</a>
+                <a href="#">API Status</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
