@@ -10,7 +10,7 @@ import ReportRoutes from "./routes/reportRoutes.js"
 import ApplicantRoutes from "./routes/applicantRoutes.js"
 import { connectDB } from "./utils/db.js";
 import { processPendingResumes } from "./controllers/automationController.js"
-
+import cors from "cors";
 
 
 await connectDB();
@@ -18,8 +18,15 @@ processPendingResumes()
 
 const app = express();
 
+if(!process.env.CLIENT_URL) {
+    throw new Error("CLIENT_URL is not defined in environment variables");
+}
+
 //middlewares
 app.use(express.json());
+app.use(cors({
+    origin: process.env.CLIENT_URL,
+}));
 
 //routes
 app.use("/api/v1/auth", AuthRoutes)
