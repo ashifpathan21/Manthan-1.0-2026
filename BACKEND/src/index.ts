@@ -1,6 +1,6 @@
 import { config } from "dotenv"
 config();
-import express from "express"
+import express, { type NextFunction, type Request, type Response } from "express"
 import "./models/index.js"
 import AuthRoutes from "./routes/authRoutes.js"
 import FolderRoutes from "./routes/folderRoutes.js"
@@ -18,10 +18,21 @@ processPendingResumes()
 
 const app = express();
 
-if(!process.env.CLIENT_URL) {
+if (!process.env.CLIENT_URL) {
     throw new Error("CLIENT_URL is not defined in environment variables");
 }
+app.use((req: Request, res: Response, next: NextFunction) => {
+    const start = Date.now();
 
+    res.on("finish", () => {
+        const time = Date.now() - start;
+        console.log(
+            `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${time}ms)`
+        );
+    });
+
+    next();
+});
 //middlewares
 app.use(express.json());
 app.use(cors({
