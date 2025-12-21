@@ -176,44 +176,33 @@ export const createReport = async (req: Request, res: Response) => {
 /* --------------------------------------------------
    GET REPORTS BY JOB
 -------------------------------------------------- */
-export const getReportsByJob = async (req: Request, res: Response) => {
+export const getReportsById = async (req: Request, res: Response) => {
     try {
-        const { jobId } = req.params;
+        const { id } = req.params;
         const userId = req.user?.id;
 
         if (!userId || !isValidObjectId(userId)) {
             return res.status(401).json({ success: false });
         }
 
-        if (!jobId || !isValidObjectId(jobId)) {
+        if (!id || !isValidObjectId(id)) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid job id"
+                message: "Invalid id"
             });
         }
 
-        const job = await JobModel.findOne({
-            _id: jobId,
-            createdBy: userId
-        });
-
-        if (!job) {
-            return res.status(403).json({
-                success: false,
-                message: "Access denied or job not found"
-            });
-        }
-
-        const reports = await ReportModel.find({
-            jobProfile: jobId
+        const report = await ReportModel.findOne({
+            _id: id,
+            user: userId
         })
             .populate("folder")
             .populate("results")
-            .sort({ createdAt: -1 });
+            .exec()
 
         return res.status(200).json({
             success: true,
-            data: reports
+            data: report
         });
 
     } catch (error) {
@@ -290,6 +279,40 @@ export const deleteReport = async (req: Request, res: Response) => {
         return res.status(500).json({
             success: false,
             message: "Failed to delete report"
+        });
+    }
+};
+
+
+
+export const getReports = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user?.id;
+
+        if (!userId || !isValidObjectId(userId)) {
+            return res.status(401).json({ success: false });
+        }
+
+
+
+
+        const reports = await ReportModel.find({
+            user: userId
+        })
+            .populate("folder")
+            .populate("results")
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            data: reports
+        });
+
+    } catch (error) {
+        console.error("GET_REPORTS_ERROR:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch reports"
         });
     }
 };
