@@ -21,11 +21,11 @@ type Priority = {
 -------------------------------------------------- */
 function normalizePriority(priority: Priority): Priority {
     return {
-        skills: priority.skills,
-        experience: priority.experience,
-        location: priority.location,
-        qualifications: priority.qualifications,
-        projects: priority.projects
+        skills: priority?.skills ?? 0,
+        experience: priority?.experience ?? 0,
+        location: priority?.location ?? 0,
+        qualifications: priority?.qualifications ?? 0,
+        projects: priority?.projects ?? 0
     };
 }
 
@@ -59,11 +59,11 @@ export function validatePriority(priority: Partial<Priority>) {
     }
 
     const total =
-        priority.skills! +
-        priority.experience! +
-        priority.location! +
-        priority.qualifications! +
-        priority.projects!;
+        priority?.skills! +
+        priority?.experience! +
+        priority?.location! +
+        priority?.qualifications! +
+        priority?.projects!;
 
     if (total !== 100) {
         throw new Error(`Priority total must be exactly 100. Received ${total}`);
@@ -79,23 +79,22 @@ export const createReport = async (req: Request, res: Response) => {
     try {
         const userId = req.user?.id;
         const { jobId, folderId, priority } = req.body;
-
         if (!userId || !isValidObjectId(userId)) {
             return res.status(401).json({ success: false, message: "Unauthorized" });
         }
 
         if (!jobId || !folderId ||
             !isValidObjectId(jobId) ||
-            !isValidObjectId(folderId)
+            !isValidObjectId(folderId) || !priority
         ) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid job or folder id"
             });
         }
-
+        console.log("Validating")
         validatePriority(priority);
-
+        console.log("Validated")
         const normalizedPriority = normalizePriority(priority);
         const priorityHash = getPriorityHash(normalizedPriority);
 
@@ -197,6 +196,7 @@ export const getReportsById = async (req: Request, res: Response) => {
             user: userId
         })
             .populate("folder")
+            .populate("jobProfile")
             .populate("results")
             .exec()
 

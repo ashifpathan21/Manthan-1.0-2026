@@ -3,6 +3,7 @@ import Applicant from "../models/applicant.js";
 import { fetchAllSocialProfiles } from "../utils/social.js";
 import { checkUrlSafeBrowsing } from "../utils/threat.js";
 import { analyzeSEO } from "../utils/seo.js";
+import { isValidObjectId } from "../middlewares/authMiddleware.js";
 
 export const verifyApplicantById = async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -79,6 +80,38 @@ export const projectAnalysis = async (req: Request, res: Response) => {
       success: false,
       message: "Internal Server Error",
       error
+    })
+  }
+}
+
+
+export const getById = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id
+    const { id } = req.params
+    if (!userId || !isValidObjectId(userId) || !id || !isValidObjectId(id)) {
+      return res.status(501).json({
+        success: false,
+        message: "Unauthorized"
+      })
+    }
+
+    const applicant = await Applicant.findOne({ _id: id, createdBy: userId }).populate("resume").exec()
+    if (!applicant) {
+      return res.status(404).json({
+        success: false,
+        message: "Applicant Not Found"
+      })
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: applicant
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "INTERNAL SERVER ERROR"
     })
   }
 }

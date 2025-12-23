@@ -203,3 +203,32 @@ export const getFolder = async (req: Request, res: Response) => {
         });
     }
 };
+export const getFolderById = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user?.id;
+        const { id } = req.params
+
+        if (!userId || !isValidObjectId(userId) || !id || !isValidObjectId(id)) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized",
+            });
+        }
+
+        const folder = await FolderModel.findOne({ user: userId, _id: id })
+            .populate("totalFiles processedFiles")
+            .exec();
+
+        return res.status(200).json({
+            success: true,
+            message: "Folders fetched successfully",
+            data: folder,
+        });
+    } catch (error) {
+        console.error("GET_FOLDER_ERROR:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
